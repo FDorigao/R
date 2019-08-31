@@ -1,3 +1,5 @@
+library(outliers)
+
 RemoveOutlier <- function(X){
   individuo <- c() #criar uma lista onde serão colocados os indivíduos outliers
   variavel <- c() #criar uma lista onde serão colocados as variáveis onde estão os indivíduos
