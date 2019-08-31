@@ -1,0 +1,19 @@
+RemoveOutlier <- function(X){
+  individuo <- c() #criar uma lista onde serão colocados os indivíduos outliers
+  variavel <- c() #criar uma lista onde serão colocados as variáveis onde estão os indivíduos
+    for (i in 1:dim(X)[2]){ #Loop 'for' correndo todas as variáveis
+      if (!is.numeric(X[,i]) == FALSE){ #If procurando quais variáveis são numéricas
+        if ((grubbs.test(X[,i])$p.value) < 0.05){
+         a <- outlier(X[,i])
+         b <- which(X[,i] == a)
+         individuo <- c(individuo, b) #adiciona indivíduo à lista
+         variavel <- c(variavel, names(X[1,])[i]) #adiciona a variável do indivíduo
+         X[b, i] <- NA #troca o outlier por NA
+        }
+      }
+    }
+  t <- data.frame(individuo, variavel) #cria um data frame com 2 colunas, uma com
+                                      #indivíduos e outra com as variáveis
+  d <- list(X, t) #cria uma lista com df sem outliers + df especificando os outliers
+  return(d) 
+  }
