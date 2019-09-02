@@ -1,5 +1,7 @@
 library(outliers)
 
+##Função1 - RemoveOutlier(): remove apenas 1 outlier de cada variável, caso haja
+#Deve ser atribuída ao próprio data frame. Ex: testeout <- RemoveOutlier(testeout)
 RemoveOutlier <- function(X){
   individuo <- c() #criar uma lista onde serão colocados os indivíduos outliers
   variavel <- c() #criar uma lista onde serão colocados as variáveis onde estão os indivíduos
@@ -10,12 +12,93 @@ RemoveOutlier <- function(X){
          b <- which(X[,i] == a)
          individuo <- c(individuo, b) #adiciona indivíduo à lista
          variavel <- c(variavel, names(X[1,])[i]) #adiciona a variável do indivíduo
-         X[b, i] <- NA #troca o outlier por NA
+         
+          X[b, i] <- NA #troca o outlier por NA
         }
       }
     }
-  t <- data.frame(individuo, variavel) #cria um data frame com 2 colunas, uma com
-                                      #indivíduos e outra com as variáveis
-  d <- list(X, t) #cria uma lista com df sem outliers + df especificando os outliers
-  return(d) 
+  return(X) 
   }
+  
+  ##Função2: IndentifyOutliers(): Cria um data frame com os outliers em cada variável,
+##o seu valor e o valor de p do teste de Grubbs
+IdentifyOutliers <- function(X){
+  individuo <- c() #criar uma lista onde serão colocados os indivíduos outliers
+  variavel <- c() #criar uma lista onde serão colocados as variáveis onde estão os indivíduos
+  valorp <- c() #criar uma lista onde serão colocados os valores de p
+  valorout <-c() #criar uma lista onde serão colocados valores do outlier
+    for (i in 1:dim(X)[2]){ #Loop 'for' correndo todas as variáveis
+      if (!is.numeric(X[,i]) == FALSE){ #If procurando quais variáveis são numéricas
+        if ((grubbs.test(X[,i])$p.value) < 0.05){
+          a <- outlier(X[,i])
+          b <- which(X[,i] == a)
+          individuo <- c(individuo, b) #adiciona indivíduo à lista
+          variavel <- c(variavel, rep(names(X[1,])[i], each = length(b))) #adiciona a variável do indivíduo
+          valorp <- c(valorp, rep((grubbs.test(X[,i])$p.value), each = length(b)))
+          valorout <- c(valorout, rep(a, each = length(b)))
+        }
+      }
+    } 
+  t <- data.frame("var" = variavel, "ind" = individuo, "p" = valorp,
+                  "valor outlier" = valorout) #cria um data frame com 2 colunas, uma com
+                                              #indivíduos e outra com as variáveis
+ 
+  return(t) 
+  }
+  
+##Função3 - RemoveAllOutliers(): remove todos os outliers de cada variável (= rodar 
+## RemoveOutlier() várias vezes até não haver nenhum outlier)
+#Deve ser atribuída ao próprio data frame. Ex: testeout <- RemoveOutlier(testeout)
+RemoveAllOutliers <- function(X){
+  repeat{
+    contagem <- c() #criar uma lista onde serão colocados os indivíduos outliers
+    for (i in 1:dim(X)[2]){ #Loop 'for' correndo todas as variáveis
+      if (!is.numeric(X[,i]) == FALSE){ #If procurando quais variáveis são numéricas
+        if ((grubbs.test(X[,i])$p.value) < 0.05){
+          a <- outlier(X[,i])
+          b <- which(X[,i] == a)
+          contagem <- c(contagem, b, a) 
+          X[b, i] <- NA #troca o outlier por NA
+        }
+      }
+    }
+    if(length(contagem) == 0){return(X)}
+  }
+}
+
+##Função4: IndentifyOutliers(): Cria um data frame com os outliers em cada variável,
+##o seu valor e o valor de p do teste de Grubbs
+IdentifyAllOutliers <- function(X){
+  rodada <- 1 #lista com a rodada em que foi encontrado o outlier
+  dfout <- data.frame() #dataframe com todos os outliers
+  repeat{ #Repete até acabar os outliers. Para na última condição "if...esle"
+    individuo <- c() #lista onde serão colocados os indivíduos outliers
+    variavel <- c() #lista onde serão colocados as variáveis onde estão os indivíduos
+    valorp <- c() #lista onde serão colocados os valores de p
+    valorout <- c() #lista onde serão colocados valores do outlier
+    for (i in 1:dim(X)[2]){ #Loop 'for' correndo todas as variáveis
+      if (!is.numeric(X[,i]) == FALSE){ #If procurando quais variáveis são numéricas
+        if ((grubbs.test(X[,i])$p.value) < 0.05){#Checa se o p<0.05. Se sim, a condição continua
+          a <- outlier(X[,i])#Atribui a "a" o valor do outlier 
+          b <- which(X[,i] == a)#Atribui a "b" a posição do indivíduo outlier (número da linha)
+          individuo <- c(individuo, b) #adiciona indivíduo à lista
+          variavel <- c(variavel, rep(names(X[1,])[i], each = length(b))) #adiciona a variável do indivíduo
+          valorp <- c(valorp, rep((grubbs.test(X[,i])$p.value), each = length(b)))
+          valorout <- c(valorout, rep(a, each = length(b)))
+        }
+      }
+    }
+    t <- data.frame("var" = variavel, "ind" = individuo, "p" = valorp,
+                    "valor_outlier" = valorout) #cria um data frame com 2 colunas, uma com indivíduos e outra com as variáveis
+    if (dim(t)[1] != c(0)){ #Se houver outliers, a dimensão do dataframe não será 0
+      t <- cbind(t, "rodada" = rep(rodada)) #adiciona o número da rodada
+      dfout <- rbind(dfout, t)
+      dfout[,3] <- round(dfout[,3], 3)#Colocar 3 casas após a vírgula
+      dfout[,4] < round(dfout[,4], 3) ##Não colocou apenas 3 casas após a vírgula(?)
+      rodada <- rodada + 1 #Aumenta o número da rodada
+      X <- RemoveOutlier(X) #Aplica a função RemoveOutlier na matriz
+    } else {
+        return(dfout)
+    }
+  }
+}
